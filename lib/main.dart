@@ -115,7 +115,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Row(
                       children: [
                         Text("Current visible radius: ${lastVisibleRadiusInMeters} m",
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.blueAccent)),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.blueAccent)),
                       ],
                     ))),
           ],
