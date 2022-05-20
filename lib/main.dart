@@ -49,7 +49,8 @@ class _MyHomePageState extends State<MyHomePage> {
   LatLng initialPosition = LatLng(0, 0);
   late GoogleMapController mapController;
   late CameraPosition lastCameraPosition;
-  double lastVisibleRadiusInMeter = 0;
+  int lastVisibleRadiusInMeter = 0;
+  Timer cameraIdleTimer = Timer(Duration(milliseconds: 1000), () => {});
 
   @override
   void initState() {
@@ -83,7 +84,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ))),
             SizedBox(
                 width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height - 200,
+                height: MediaQuery.of(context).size.height - 250,
                 child: GoogleMap(
                   mapType: MapType.hybrid,
                   initialCameraPosition: CameraPosition(
@@ -96,7 +97,18 @@ class _MyHomePageState extends State<MyHomePage> {
                   myLocationEnabled: true,
                   zoomGesturesEnabled: true,
                   zoomControlsEnabled: false,
-                ))
+                )),
+            Container(
+                color: Colors.amber.shade200,
+                width: double.infinity,
+                child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Row(
+                      children: [
+                        Text("Current visible radius: ${lastVisibleRadiusInMeter} m",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.blueAccent)),
+                      ],
+                    ))),
           ],
         ),
       ),
@@ -113,14 +125,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void onCameraMove(CameraPosition position) async {
     var visibleRegion = await mapController.getVisibleRegion();
-
+    var radius = Geolocator.distanceBetween(visibleRegion.northeast.latitude, visibleRegion.northeast.longitude,
+        visibleRegion.southwest.latitude, visibleRegion.southwest.longitude);
     setState(() {
       lastCameraPosition = position;
-      lastVisibleRadiusInMeter = Geolocator.distanceBetween(visibleRegion.northeast.latitude,
-          visibleRegion.northeast.longitude, visibleRegion.southwest.latitude, visibleRegion.southwest.longitude);
+      lastVisibleRadiusInMeter = radius.round();
     });
-    print(
-        "Camera moved: last camera position: ${lastCameraPosition}, visible radius: ${lastVisibleRadiusInMeter} meter");
+
+    if (cameraIdleTimer.isActive) cameraIdleTimer.cancel();
+    cameraIdleTimer = startMapMovedTimer(500);
   }
 
   // Event never fired !! :-( :-(
@@ -201,4 +214,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
     print("Measure ${measure.TVOC},  ${measure.eCO2}, ${measure.position}");
   }
+
+  Timer startMapMovedTimer([int milliseconds = 10000]) => Timer(Duration(milliseconds: milliseconds), () {
+        print(
+            "Camera moved: last camera position: ${lastCameraPosition}, visible radius: ${lastVisibleRadiusInMeter} meter");
+      });
 }
