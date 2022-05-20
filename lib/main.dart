@@ -4,6 +4,7 @@ import 'package:ari4me_app/models/BLEmodel.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
+import 'dart:math';
 
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -55,7 +56,9 @@ class _MyHomePageState extends State<MyHomePage> {
   int lastVisibleRadiusInMeters = 0;
   Timer cameraIdleTimer = Timer(Duration(milliseconds: 1000), () => {});
 
-  List<MongoMeasure> measures = [];
+  Set<Marker> markers = {};
+
+  Random random = Random();
 
   @override
   void initState() {
@@ -91,7 +94,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 width: MediaQuery.of(context).size.width,
                 height: MediaQuery.of(context).size.height - 250,
                 child: GoogleMap(
-                  mapType: MapType.hybrid,
+                  mapType: MapType.normal,
                   initialCameraPosition: CameraPosition(
                     target: initialPosition,
                     zoom: 14.4746,
@@ -102,6 +105,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   myLocationEnabled: true,
                   zoomGesturesEnabled: true,
                   zoomControlsEnabled: false,
+                  markers: markers,
                 )),
             Container(
                 color: Colors.amber.shade200,
@@ -240,11 +244,22 @@ class _MyHomePageState extends State<MyHomePage> {
     );
     if (response.statusCode == 200 || response.statusCode == 201) {
       List<dynamic> list = json.decode(response.body);
-      List<MongoMeasure> measures = [];
+      List<Marker> newMarkerList = [];
       list.forEach((element) {
-        measures.add(MongoMeasure.fromJson(element));
+        var measure = MongoMeasure.fromJson(element);
+        print("Add new Marker: ${measure.lat}, ${measure.lon}, ${measure.type}");
+        newMarkerList.add(Marker(
+          markerId: MarkerId("id_${random.nextInt(10000)}"),
+          position: LatLng(measure.lat, measure.lon),
+          draggable: false,
+          infoWindow: InfoWindow(title: "${measure.type}, value ${measure.value}"),
+        ));
+        setState(() {
+          markers = Set.from(newMarkerList);
+        });
       });
-      print("getSensorsDataNearToMe: got data");
+
+      print("getSensorsDataNearToMe: got data (added ${markers.length} markers)");
     } else {
       print("getSensorsDataNearToMe: ERROR: ${response.statusCode}");
     }

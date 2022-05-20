@@ -45,16 +45,18 @@ class Measure {
 
 class MongoMeasure {
   final String type;
-  final num lat;
-  final num lon;
+  final double lat;
+  final double lon;
+  final num value;
 
-  const MongoMeasure({required this.type, required this.lat, required this.lon});
+  const MongoMeasure({required this.type, required this.lat, required this.lon, required this.value});
 
   factory MongoMeasure.fromJson(Map<String, dynamic> json) {
     return MongoMeasure(
       type: json['type'],
       lat: json['lat'],
       lon: json['lon'],
+      value: json['value'],
     );
   }
 }
