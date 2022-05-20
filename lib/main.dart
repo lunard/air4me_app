@@ -1,3 +1,4 @@
+import 'package:ari4me_app/models/BLEmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
@@ -36,13 +37,14 @@ class _MyHomePageState extends State<MyHomePage> {
   bool deviceIsConnected = false;
   String deviceId = "";
   late QualifiedCharacteristic bleCharacteristic;
-
   final flutterReactiveBle = FlutterReactiveBle();
+
+  // Sensor data
+  Measure measure = Measure(-1, -1);
 
   @override
   void initState() {
     super.initState();
-
     attachAir4MeSensor();
   }
 
@@ -60,15 +62,17 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
+            Wrap(
+              spacing: 50,
+              children: [
+                Text("TVOC: ${measure.TVOC} ppb",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.blueAccent)),
+                Text("eCO2: ${measure.eCO2} ppb",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.blueAccent)),
+              ],
+            )
           ],
         ),
       ),
@@ -121,7 +125,7 @@ class _MyHomePageState extends State<MyHomePage> {
         });
 
         flutterReactiveBle.subscribeToCharacteristic(bleCharacteristic).listen((data) {
-          print(String.fromCharCodes(data));
+          manageSensorData(String.fromCharCodes(data));
         }, onError: (dynamic error) {
           print("BLE notify error: ${error.toString()}");
         });
@@ -138,5 +142,15 @@ class _MyHomePageState extends State<MyHomePage> {
     }, onError: (dynamic error) {
       // Handle a possible error
     });
+  }
+
+  void manageSensorData(String dataAsString) {
+    var tokens = dataAsString.split("##");
+    num tvoc = num.parse(tokens[0]);
+    num eco2 = num.parse(tokens[1]);
+    setState(() {
+      measure = Measure(tvoc, eco2);
+    });
+    print("Measure ${measure.TVOC},  ${measure.eCO2}");
   }
 }
