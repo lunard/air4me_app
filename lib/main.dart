@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:ari4me_app/models/BLEmodel.dart';
+import 'package:ari4me_app/models/MeasureModel.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
@@ -8,12 +8,18 @@ import 'dart:math';
 
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:ari4me_app/models/BLEmodel.dart';
+import 'package:ari4me_app/models/MeasureModel.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:realm/realm.dart';
+
+import 'models/LocalDBMeasureModel.dart';
 
 void main() {
   runApp(const MyApp());
 }
+
+var config = Configuration([LocalDBMeasure.schema]);
+var realm = Realm(config);
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
