@@ -1,11 +1,14 @@
+import 'dart:convert';
+
 import 'package:ari4me_app/models/BLEmodel.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:http/http.dart' as http;
+
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ari4me_app/models/BLEmodel.dart';
 import 'package:geolocator/geolocator.dart';
-
-import 'dart:async';
 
 void main() {
   runApp(const MyApp());
@@ -49,8 +52,10 @@ class _MyHomePageState extends State<MyHomePage> {
   LatLng initialPosition = LatLng(0, 0);
   late GoogleMapController mapController;
   late CameraPosition lastCameraPosition;
-  int lastVisibleRadiusInMeter = 0;
+  int lastVisibleRadiusInMeters = 0;
   Timer cameraIdleTimer = Timer(Duration(milliseconds: 1000), () => {});
+
+  List<MongoMeasure> measures = [];
 
   @override
   void initState() {
@@ -105,7 +110,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     padding: const EdgeInsets.all(20.0),
                     child: Row(
                       children: [
-                        Text("Current visible radius: ${lastVisibleRadiusInMeter} m",
+                        Text("Current visible radius: ${lastVisibleRadiusInMeters} m",
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.blueAccent)),
                       ],
                     ))),
@@ -129,7 +134,7 @@ class _MyHomePageState extends State<MyHomePage> {
         visibleRegion.southwest.latitude, visibleRegion.southwest.longitude);
     setState(() {
       lastCameraPosition = position;
-      lastVisibleRadiusInMeter = radius.round();
+      lastVisibleRadiusInMeters = radius.round();
     });
 
     if (cameraIdleTimer.isActive) cameraIdleTimer.cancel();
@@ -215,8 +220,33 @@ class _MyHomePageState extends State<MyHomePage> {
     print("Measure ${measure.TVOC},  ${measure.eCO2}, ${measure.position}");
   }
 
-  Timer startMapMovedTimer([int milliseconds = 10000]) => Timer(Duration(milliseconds: milliseconds), () {
+  Timer startMapMovedTimer([int milliseconds = 10000]) => Timer(Duration(milliseconds: milliseconds), () async {
         print(
-            "Camera moved: last camera position: ${lastCameraPosition}, visible radius: ${lastVisibleRadiusInMeter} meter");
+            "Camera moved: last camera position: ${lastCameraPosition}, visible radius: ${lastVisibleRadiusInMeters} meter");
+        await getSensorsDataNearToMe();
       });
+
+  Future<void> getSensorsDataNearToMe() async {
+    var response = await http.post(
+      Uri.parse('https://home4me.dev/air4me/sensors/near'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        "latitude": lastCameraPosition.target.latitude.toString(),
+        "longitude": lastCameraPosition.target.longitude.toString(),
+        "radius": lastVisibleRadiusInMeters.toString()
+      }),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      List<dynamic> list = json.decode(response.body);
+      List<MongoMeasure> measures = [];
+      list.forEach((element) {
+        measures.add(MongoMeasure.fromJson(element));
+      });
+      print("getSensorsDataNearToMe: got data");
+    } else {
+      print("getSensorsDataNearToMe: ERROR: ${response.statusCode}");
+    }
+  }
 }
