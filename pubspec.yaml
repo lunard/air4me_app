@@ -48,6 +48,10 @@ dev_dependencies:
   flutter_reactive_ble: ^5.0.2
   provider: ^6.0.2
 
+  geolocator: #latest version
+  geocoding: #latest version
+  google_maps_flutter: ^2.1.5
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

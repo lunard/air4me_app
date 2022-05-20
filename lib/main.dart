@@ -1,6 +1,11 @@
 import 'package:ari4me_app/models/BLEmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:ari4me_app/models/BLEmodel.dart';
+import 'package:geolocator/geolocator.dart';
+
+import 'dart:async';
 
 void main() {
   runApp(const MyApp());
@@ -13,11 +18,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'air4me',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'air4me'),
     );
   }
 }
@@ -32,26 +37,24 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  // Sensor
   bool deviceIsConnecting = false;
   bool deviceIsConnected = false;
   String deviceId = "";
   late QualifiedCharacteristic bleCharacteristic;
   final flutterReactiveBle = FlutterReactiveBle();
+  Measure measure = Measure();
 
-  // Sensor data
-  Measure measure = Measure(-1, -1);
+  // Maps
+  LatLng initialPosition = LatLng(0, 0);
+  late GoogleMapController mapController;
+  late CameraPosition lastCameraPosition;
+  double lastVisibleRadiusInMeter = 0;
 
   @override
   void initState() {
     super.initState();
     attachAir4MeSensor();
-  }
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
   }
 
   @override
@@ -64,24 +67,65 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            Wrap(
-              spacing: 50,
-              children: [
-                Text("TVOC: ${measure.TVOC} ppb",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.blueAccent)),
-                Text("eCO2: ${measure.eCO2} ppb",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.blueAccent)),
-              ],
-            )
+            Container(
+                color: Colors.amber.shade200,
+                width: double.infinity,
+                child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Row(
+                      children: [
+                        Text("TVOC: ${measure.TVOC} ppb",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.blueAccent)),
+                        Spacer(),
+                        Text("eCO2: ${measure.eCO2} ppb",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.blueAccent)),
+                      ],
+                    ))),
+            SizedBox(
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height - 200,
+                child: GoogleMap(
+                  mapType: MapType.hybrid,
+                  initialCameraPosition: CameraPosition(
+                    target: initialPosition,
+                    zoom: 14.4746,
+                  ),
+                  onMapCreated: onMapCreated,
+                  onCameraMove: onCameraMove,
+                  onCameraIdle: onCameraIdle,
+                  myLocationEnabled: true,
+                  zoomGesturesEnabled: true,
+                  zoomControlsEnabled: false,
+                ))
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
     );
+  }
+
+  void onMapCreated(GoogleMapController controller) async {
+    mapController = controller;
+
+    var value = await Measure.getGeoLocationPosition();
+    initialPosition = LatLng(value.latitude, value.longitude);
+    await mapController.moveCamera(CameraUpdate.newLatLngZoom(initialPosition, 14));
+  }
+
+  void onCameraMove(CameraPosition position) async {
+    var visibleRegion = await mapController.getVisibleRegion();
+
+    setState(() {
+      lastCameraPosition = position;
+      lastVisibleRadiusInMeter = Geolocator.distanceBetween(visibleRegion.northeast.latitude,
+          visibleRegion.northeast.longitude, visibleRegion.southwest.latitude, visibleRegion.southwest.longitude);
+    });
+    print(
+        "Camera moved: last camera position: ${lastCameraPosition}, visible radius: ${lastVisibleRadiusInMeter} meter");
+  }
+
+  // Event never fired !! :-( :-(
+  void onCameraIdle() {
+    print("Camera idle: last camera position: ${lastCameraPosition}");
   }
 
   void attachAir4MeSensor() {
@@ -124,8 +168,8 @@ class _MyHomePageState extends State<MyHomePage> {
               deviceId: deviceId);
         });
 
-        flutterReactiveBle.subscribeToCharacteristic(bleCharacteristic).listen((data) {
-          manageSensorData(String.fromCharCodes(data));
+        flutterReactiveBle.subscribeToCharacteristic(bleCharacteristic).listen((data) async {
+          await manageSensorData(String.fromCharCodes(data));
         }, onError: (dynamic error) {
           print("BLE notify error: ${error.toString()}");
         });
@@ -144,13 +188,17 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void manageSensorData(String dataAsString) {
+  Future<void> manageSensorData(String dataAsString) async {
     var tokens = dataAsString.split("##");
     num tvoc = num.parse(tokens[0]);
     num eco2 = num.parse(tokens[1]);
+
+    var m = Measure();
+    await m.setMeasureAsync(tvoc, eco2);
     setState(() {
-      measure = Measure(tvoc, eco2);
+      measure = m;
     });
-    print("Measure ${measure.TVOC},  ${measure.eCO2}");
+
+    print("Measure ${measure.TVOC},  ${measure.eCO2}, ${measure.position}");
   }
 }
