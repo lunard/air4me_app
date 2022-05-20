@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
@@ -37,7 +35,6 @@ class _MyHomePageState extends State<MyHomePage> {
   bool deviceIsConnecting = false;
   bool deviceIsConnected = false;
   String deviceId = "";
-  late Timer dataTimer;
   late QualifiedCharacteristic bleCharacteristic;
 
   final flutterReactiveBle = FlutterReactiveBle();
@@ -45,8 +42,6 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-
-    dataTimer = readSensorDataTimer(1000);
 
     attachAir4MeSensor();
   }
@@ -86,7 +81,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void attachAir4MeSensor() {
-    flutterReactiveBle.scanForDevices(withServices: [], scanMode: ScanMode.lowLatency).listen((device) {
+    flutterReactiveBle.scanForDevices(withServices: [], scanMode: ScanMode.balanced).listen((device) {
       if (!deviceIsConnected && !deviceIsConnecting && device.name == "air4me") {
         print("Found air4me sensor: ${device.toString()}");
 
@@ -123,12 +118,16 @@ class _MyHomePageState extends State<MyHomePage> {
               serviceId: Uuid.parse("06538008-d393-11ec-9d64-0242ac120002"),
               characteristicId: Uuid.parse("105fce30-d393-11ec-9d64-0242ac120002"),
               deviceId: deviceId);
-
-          dataTimer = readSensorDataTimer(1000);
         });
+
+        flutterReactiveBle.subscribeToCharacteristic(bleCharacteristic).listen((data) {
+          print(String.fromCharCodes(data));
+        }, onError: (dynamic error) {
+          print("BLE notify error: ${error.toString()}");
+        });
+
         print("Device ${deviceId} connected :-)");
       } else {
-        dataTimer.cancel();
         setState(() {
           deviceIsConnecting = false;
           deviceIsConnected = false;
@@ -138,16 +137,6 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     }, onError: (dynamic error) {
       // Handle a possible error
-    });
-  }
-
-  Timer readSensorDataTimer(int milliseconds) {
-    return Timer.periodic(Duration(milliseconds: milliseconds), (timer) async {
-      if (deviceIsConnected) {
-        final measure = await flutterReactiveBle.readCharacteristic(bleCharacteristic);
-
-        print("Read sensor data: ${measure}");
-      }
     });
   }
 }
