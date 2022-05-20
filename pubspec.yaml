@@ -51,6 +51,7 @@ dev_dependencies:
   geolocator: #latest version
   geocoding: #latest version
   google_maps_flutter: ^2.1.5
+  http: #latest version
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

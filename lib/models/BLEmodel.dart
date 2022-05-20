@@ -42,3 +42,19 @@ class Measure {
     return await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
   }
 }
+
+class MongoMeasure {
+  final String type;
+  final num lat;
+  final num lon;
+
+  const MongoMeasure({required this.type, required this.lat, required this.lon});
+
+  factory MongoMeasure.fromJson(Map<String, dynamic> json) {
+    return MongoMeasure(
+      type: json['type'],
+      lat: json['lat'],
+      lon: json['lon'],
+    );
+  }
+}
