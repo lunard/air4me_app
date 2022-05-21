@@ -11,6 +11,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ari4me_app/models/MeasureModel.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:realm/realm.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 import 'models/LocalDBMeasureModel.dart';
 
@@ -66,10 +67,29 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Random random = Random();
 
+  late StreamSubscription<ConnectivityResult> subscription;
+
+  bool isOffline = false;
   @override
   void initState() {
     super.initState();
     attachAir4MeSensor();
+    (Connectivity().checkConnectivity()).then((value) {
+      if (value == ConnectivityResult.none) {
+        setState(() {
+          isOffline = true;
+        });
+      }
+    });
+
+    subscription = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      print("Connectivity changed to ${result.name}");
+      if (result == ConnectivityResult.none) {
+        setState(() {
+          isOffline = true;
+        });
+      }
+    });
   }
 
   @override
