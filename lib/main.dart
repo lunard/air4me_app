@@ -101,16 +101,16 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
             Container(
-                color: Colors.amber.shade200,
+                color: deviceIsConnected ? Colors.amber.shade200 : Colors.red.shade300,
                 width: double.infinity,
                 child: Padding(
                     padding: const EdgeInsets.all(20.0),
                     child: Row(
                       children: [
-                        Text("TVOC: ${measure.TVOC} ppb",
+                        Text("TVOC: ${deviceIsConnected ? "${measure.TVOC} ppb" : "-"}",
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.blueAccent)),
                         Spacer(),
-                        Text("eCO2: ${measure.eCO2} ppb",
+                        Text("eCO2: ${deviceIsConnected ? "${measure.eCO2} ppb" : "-"}",
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.blueAccent)),
                       ],
                     ))),
@@ -158,6 +158,13 @@ class _MyHomePageState extends State<MyHomePage> {
     var value = await Measure.getGeoLocationPosition();
     initialPosition = LatLng(value.latitude, value.longitude);
     await mapController.moveCamera(CameraUpdate.newLatLngZoom(initialPosition, 14));
+
+    var visibleRegion = await mapController.getVisibleRegion();
+    var radius = Geolocator.distanceBetween(visibleRegion.northeast.latitude, visibleRegion.northeast.longitude,
+        visibleRegion.southwest.latitude, visibleRegion.southwest.longitude);
+    setState(() {
+      lastVisibleRadiusInMeters = radius.round();
+    });
   }
 
   void onCameraMove(CameraPosition position) async {
