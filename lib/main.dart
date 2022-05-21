@@ -83,12 +83,10 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     subscription = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-      print("Connectivity changed to ${result.name}");
-      if (result == ConnectivityResult.none) {
-        setState(() {
-          isOffline = true;
-        });
-      }
+      print("Connectivity changed to '${result.name}'");
+      setState(() {
+        isOffline = result == ConnectivityResult.none;
+      });
     });
   }
 
@@ -138,10 +136,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 width: double.infinity,
                 child: Padding(
                     padding: const EdgeInsets.all(20.0),
-                    child: Row(
+                    child: Column(
                       children: [
                         Text("Current visible radius: ${lastVisibleRadiusInMeters} m",
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.blueAccent)),
+                        isOffline
+                            ? Text("You are offline 🙀 .. no panic, data are saved!",
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.red.shade400))
+                            : Text(""),
                       ],
                     ))),
           ],
@@ -247,6 +249,8 @@ class _MyHomePageState extends State<MyHomePage> {
       measure = m;
     });
 
+    sendOrStoreMeasure();
+
     print("Measure ${measure.TVOC},  ${measure.eCO2}, ${measure.position}");
   }
 
@@ -257,6 +261,7 @@ class _MyHomePageState extends State<MyHomePage> {
       });
 
   Future<void> getSensorsDataNearToMe() async {
+    if (isOffline) return;
     var response = await http.post(
       Uri.parse('https://home4me.dev/air4me/sensors/near'),
       headers: <String, String>{
@@ -288,6 +293,26 @@ class _MyHomePageState extends State<MyHomePage> {
       print("getSensorsDataNearToMe: got data (added ${markers.length} markers)");
     } else {
       print("getSensorsDataNearToMe: ERROR: ${response.statusCode}");
+    }
+  }
+
+  Future<void> sendOrStoreMeasure() async {
+    if (isOffline) {
+      // Save the measure on MongoDB Realm
+    } else {
+      // Call the backend to publish the new measure on the MQTT broker
+
+      var mqttMeasure = MQTTMeasure("air4me-TVOC-eCO2", measure.position.latitude, measure.position.longitude,
+          measure.TVOC, measure.eCO2, measure.date);
+      try {
+        await http.post(Uri.parse('https://home4me.dev/air4me/sensors/measure'),
+            headers: <String, String>{
+              'Content-Type': 'application/json; charset=UTF-8',
+            },
+            body: jsonEncode(mqttMeasure.toJson()));
+      } catch (error) {
+        print("sendOrStoreMeasure ERROR: ${error}");
+      }
     }
   }
 }

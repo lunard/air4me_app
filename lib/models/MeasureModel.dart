@@ -60,3 +60,30 @@ class MongoMeasure {
     );
   }
 }
+
+class MQTTMeasure {
+  late String type;
+  late double latitude;
+  late double longitude;
+  late num TVOC;
+  late num eCO2;
+  late DateTime timestamp;
+
+  MQTTMeasure(String type, double latitude, double longitude, num tvoc, num eco2, DateTime? timestamp) {
+    this.type = type;
+    this.latitude = latitude;
+    this.longitude = longitude;
+    this.TVOC = tvoc;
+    this.eCO2 = eco2;
+    this.timestamp = timestamp ?? DateTime.now();
+  }
+
+  Map<String, dynamic> toJson() => {
+        'type': type,
+        'latitude': latitude,
+        'longitude': longitude,
+        'tvoc': TVOC,
+        'eco2': eCO2,
+        'timestamp': timestamp.toString(),
+      };
+}
