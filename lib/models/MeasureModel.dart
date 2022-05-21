@@ -43,16 +43,16 @@ class Measure {
   }
 }
 
-class MongoMeasure {
+class RemoteMeasure {
   final String type;
   final double lat;
   final double lon;
   final num value;
 
-  const MongoMeasure({required this.type, required this.lat, required this.lon, required this.value});
+  const RemoteMeasure({required this.type, required this.lat, required this.lon, required this.value});
 
-  factory MongoMeasure.fromJson(Map<String, dynamic> json) {
-    return MongoMeasure(
+  factory RemoteMeasure.fromJson(Map<String, dynamic> json) {
+    return RemoteMeasure(
       type: json['type'],
       lat: json['lat'],
       lon: json['lon'],
@@ -61,7 +61,7 @@ class MongoMeasure {
   }
 }
 
-class MQTTMeasure {
+class mqttMeasure {
   late String type;
   late double latitude;
   late double longitude;
@@ -69,7 +69,7 @@ class MQTTMeasure {
   late num eCO2;
   late DateTime timestamp;
 
-  MQTTMeasure(String type, double latitude, double longitude, num tvoc, num eco2, DateTime? timestamp) {
+  mqttMeasure(String type, double latitude, double longitude, num tvoc, num eco2, DateTime? timestamp) {
     this.type = type;
     this.latitude = latitude;
     this.longitude = longitude;

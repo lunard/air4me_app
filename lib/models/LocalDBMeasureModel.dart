@@ -9,7 +9,9 @@ class _LocalDBMeasure {
 
   late num TVOC;
   late num eCO2;
-  late DateTime date;
+  late String date; // DateTime is not supported by MongoDb Realm
   late num lat;
   late num lon;
+
+  late bool synked;
 }

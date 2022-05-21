@@ -57,6 +57,8 @@ dev_dependencies:
   realm: #latest version
   connectivity_plus: ^2.3.0
 
+  uuid: ^3.0.6
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

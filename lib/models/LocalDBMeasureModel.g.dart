@@ -11,9 +11,10 @@ class LocalDBMeasure extends _LocalDBMeasure with RealmEntity, RealmObject {
     String id,
     num TVOC,
     num eCO2,
-    DateTime date,
+    String date,
     num lat,
     num lon,
+    bool synked,
   ) {
     RealmObject.set(this, 'id', id);
     RealmObject.set(this, 'TVOC', TVOC);
@@ -21,6 +22,7 @@ class LocalDBMeasure extends _LocalDBMeasure with RealmEntity, RealmObject {
     RealmObject.set(this, 'date', date);
     RealmObject.set(this, 'lat', lat);
     RealmObject.set(this, 'lon', lon);
+    RealmObject.set(this, 'synked', synked);
   }
 
   LocalDBMeasure._();
@@ -41,9 +43,9 @@ class LocalDBMeasure extends _LocalDBMeasure with RealmEntity, RealmObject {
   set eCO2(num value) => RealmObject.set(this, 'eCO2', value);
 
   @override
-  DateTime get date => RealmObject.get<DateTime>(this, 'date') as DateTime;
+  String get date => RealmObject.get<String>(this, 'date') as String;
   @override
-  set date(DateTime value) => RealmObject.set(this, 'date', value);
+  set date(String value) => RealmObject.set(this, 'date', value);
 
   @override
   num get lat => RealmObject.get<num>(this, 'lat') as num;
@@ -54,6 +56,11 @@ class LocalDBMeasure extends _LocalDBMeasure with RealmEntity, RealmObject {
   num get lon => RealmObject.get<num>(this, 'lon') as num;
   @override
   set lon(num value) => RealmObject.set(this, 'lon', value);
+
+  @override
+  bool get synked => RealmObject.get<bool>(this, 'synked') as bool;
+  @override
+  set synked(bool value) => RealmObject.set(this, 'synked', value);
 
   @override
   Stream<RealmObjectChanges<LocalDBMeasure>> get changes =>
@@ -67,9 +74,10 @@ class LocalDBMeasure extends _LocalDBMeasure with RealmEntity, RealmObject {
       SchemaProperty('id', RealmPropertyType.string, primaryKey: true),
       SchemaProperty('TVOC', RealmPropertyType.double),
       SchemaProperty('eCO2', RealmPropertyType.double),
-      SchemaProperty('date', RealmPropertyType.timestamp),
+      SchemaProperty('date', RealmPropertyType.string),
       SchemaProperty('lat', RealmPropertyType.double),
       SchemaProperty('lon', RealmPropertyType.double),
+      SchemaProperty('synked', RealmPropertyType.bool),
     ]);
   }
 }

@@ -12,9 +12,11 @@ import 'package:ari4me_app/models/MeasureModel.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:realm/realm.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:uuid/uuid.dart' as _uuid;
 
 import 'models/LocalDBMeasureModel.dart';
 
+var uuid = _uuid.Uuid();
 void main() {
   runApp(const MyApp());
 }
@@ -284,7 +286,7 @@ class _MyHomePageState extends State<MyHomePage> {
       List<dynamic> list = json.decode(response.body);
       List<Marker> newMarkerList = [];
       list.forEach((element) {
-        var measure = MongoMeasure.fromJson(element);
+        var measure = RemoteMeasure.fromJson(element);
         print("Add new Marker: ${measure.lat}, ${measure.lon}, ${measure.type}");
         newMarkerList.add(Marker(
           markerId: MarkerId("id_${random.nextInt(10000)}"),
@@ -304,19 +306,25 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> sendOrStoreMeasure() async {
+    var currentMeasure = mqttMeasure("air4me-TVOC-eCO2", measure.position.latitude, measure.position.longitude,
+        measure.TVOC, measure.eCO2, measure.date);
+
     if (isOffline) {
       // Save the measure on MongoDB Realm
+      var localMongoDbMeasure = LocalDBMeasure(uuid.v1(), currentMeasure.TVOC, currentMeasure.eCO2,
+          currentMeasure.timestamp.toString(), currentMeasure.latitude, currentMeasure.longitude, false);
+
+      realm.write(() {
+        realm.add(localMongoDbMeasure);
+      });
     } else {
       // Call the backend to publish the new measure on the MQTT broker
-
-      var mqttMeasure = MQTTMeasure("air4me-TVOC-eCO2", measure.position.latitude, measure.position.longitude,
-          measure.TVOC, measure.eCO2, measure.date);
       try {
         await http.post(Uri.parse('https://home4me.dev/air4me/sensors/measure'),
             headers: <String, String>{
               'Content-Type': 'application/json; charset=UTF-8',
             },
-            body: jsonEncode(mqttMeasure.toJson()));
+            body: jsonEncode(currentMeasure.toJson()));
       } catch (error) {
         print("sendOrStoreMeasure ERROR: ${error}");
       }
