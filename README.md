@@ -2,8 +2,9 @@
 
 This flutter app will be used to
 
-- collect data from the sensor (M5StickC Plus + Air quality sensor)
-- send new data with the remote MongoDB, though the air4me service (Nestjs)
+- collect air quality values notified by the sensor (M5StickC Plus + Air quality sensor)
+- send new data with the backend, when online
+- store data in the local MongoDB realm database, when offline. Sync the stored data when returns online.
 - navigate and visualize the data
 
 # references
